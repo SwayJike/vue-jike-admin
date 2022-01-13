@@ -1,0 +1,57 @@
+/*重置样式*/
+/*---------全局重置开始----------*/
+html {
+  /* 让非ie浏览器默认也显示垂直滚动条，防止因滚动条引起的闪烁 */
+  overflow-y: scroll;
+  /*设置字体*/
+  font-family: "PingFang", "Source Han Sans CN", "Microsoft YaHei", "Tahoma", "Helvetica", "Arial", "\5b8b\4f53", "sans-serif";
+  /*webkit在渲染页面时，会自动调整字体大小,比如横竖屏切换时*/
+  -webkit-text-size-adjust: 100%;
+
+}
+html * {
+  outline: 0;
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+  /*iOS会在元素周围显示橙色的外框，以表明该元素被tap了。如果你想自己实现tap时的响应效果，可以用以下方法“去除”这个高亮效果*/
+}
+body, ul, ol, li, dl, dt, dd, p, pre, h1, h2, h3, h4, h5, h6, hr, blockquote, fieldset, lengend,
+button,
+textarea,
+th,
+td {
+  margin: 0;
+  padding: 0;
+}
+article, aside, details, figcaption, figure, footer, header, hgroup,nav, section{ display:block;}
+input, select, textarea {
+  -webkit-appearance:none; /*去掉webkit默认的表单样式*/
+}
+/* 表单控件没有亮线 */
+button, input, optgroup, select, textarea {
+  margin: 0;
+  outline: none;
+  font: inherit;
+  border: none;
+}
+/* 表格边框和元素间距清空 */
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+li {
+  list-style: none;
+}
+a {
+  text-decoration: none;
+}
+em {
+  font-style: normal;
+}
+img {
+  border: none;
+  margin: 0;
+  padding: 0;
+  vertical-aline:middle;
+}
+/*-----全局重置结束-------*/
+
