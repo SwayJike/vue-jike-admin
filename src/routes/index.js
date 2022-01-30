@@ -51,6 +51,27 @@ let routes = [
           title: '部门管理'
         }
       },
+      {
+        path: '/sys-tool/swagger',
+        component: () => import('../views/sys-tool/Swagger'),
+        meta: {
+          title: 'Swagger接口文档'
+        }
+      },
+      {
+        path: '/sys-tool/druid',
+        component: () => import('../views/sys-tool/Druid'),
+        meta: {
+          title: 'Druid监控后台'
+        }
+      },
+      {
+        path: '/sys-tool/movie',
+        component: () => import('../views/sys-tool/Movie'),
+        meta: {
+          title: 'Movie'
+        }
+      }
     ]
   },
 ]

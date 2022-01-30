@@ -46,7 +46,7 @@
      <el-table
        :data="users"
        style="width: 100%"
-       max-height="750"
+       max-height="500"
        @selection-change="handleSelectChange"
        :row-class-name="tableRowClassName">
        <el-table-column
@@ -139,19 +139,10 @@
      </el-table>
    </div>
 <!--    分页-->
-   <div style="display: flex;justify-content: end;align-items: start;margin-top: 20px;">
-     <div class="block">
-       <el-pagination
-         background
-         :page-sizes="pager.sizes"
-         :page-size="pager.pageSize"
-         @size-change="handleSizeChange"
-         @current-change="handlePageNumChange"
-         layout="sizes, prev, pager, next, jumper, ->, total"
-         :total="pager.total">
-       </el-pagination>
-     </div>
-   </div>
+   <base-pager :total="pager.total" :list-info="get$userList"
+               :page-num="pager.pageNum" :page-size="pager.pageSize"
+               @pageNum-change="pageNum => pager.pageNum = pageNum"
+               @pageSize-change="pageSize => pager.pageSize = pageSize"></base-pager>
 
 <!--   弹出框-->
    <div>
@@ -212,8 +203,10 @@
 
 <script>
 import HttpManager from "../../api/http";
+import BasePager from "../../components/base/BasePager";
 export default {
   name: "User",
+  components: {BasePager},
   data(){
     return {
       /*当前操作员用户名*/
@@ -255,6 +248,7 @@ export default {
       },
       /*级联选择器(el-cascader)相关属性开始*/
       value:'',
+      //TODO: 部门id信息待做
       values: [
         [7,2,17],[7,5],[8,6],[8,15],[7],[8],[7,2]
       ],
@@ -306,7 +300,6 @@ export default {
       this.title = '修改用户信息';
       this.dialogUser = Object.assign({}, row);
       this.dialogUser.updateBy = this.current_userName;
-      this.dialogUser.rowIndex = row.index;
       let deptId = this.dialogUser.deptId;
       this.value = this.values.find(e => {
         return e[e.length - 1] == deptId;
@@ -321,19 +314,31 @@ export default {
     },
     deleteUser(row){
       /*row存在则是删除当前行,否则删除多行*/
-      if (row){
-        let userId = row.userId;
-        HttpManager.removeUser(userId).then(() => {
-          let rowIndex = row.index;
-          this.users.splice(rowIndex,1);
-        })
-      }else {
-        if (this.selectIds && this.selectIds.length > 0){
-          HttpManager.removeSelectedUser(this.selectIds).then(() => {
-            this.get$userList();
-          });
+      this.$confirm('此操作将永久删除该用户, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+        center: true
+      }).then(() => {
+        if (row){
+          let userId = row.userId;
+          HttpManager.removeUser(userId).then(() => {
+            let rowIndex = row.index;
+            this.users.splice(rowIndex,1);
+          })
+        }else {
+          if (this.selectIds && this.selectIds.length > 0){
+            HttpManager.removeSelectedUser(this.selectIds).then(() => {
+              this.get$userList();
+            });
+          }
         }
-      }
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消删除'
+        });
+      });
     },
     handleChange(forName){
       let depId = this.value.toString().split(',').pop();
@@ -373,10 +378,10 @@ export default {
     handleSubmit(formName){
       this.$refs[formName].validate((valid) => {
         if (valid) {
-          HttpManager.saveOrUpdate(this.dialogUser).then(res => {
+          HttpManager.saveOrUpdateUser(this.dialogUser).then(res => {
             let user = res.data.data;
             if (this.title.startsWith("修改")){
-              this.users.splice(this.dialogUser.rowIndex, 1, user)
+              this.users.splice(this.dialogUser.index, 1, user)
             }else {
               this.users.push(user);
             }
@@ -393,15 +398,7 @@ export default {
     handleEnabled(row){
       let userId = row.userId;
       let enabled = row.enabled.toString();
-      HttpManager.saveOrUpdate({userId,enabled});
-    },
-    handleSizeChange(pageSize){
-      this.pager.pageSize = pageSize;
-      this.get$userList();
-    },
-    handlePageNumChange(pageNum){
-      this.pager.pageNum = pageNum;
-      this.get$userList();
+      HttpManager.saveOrUpdateUser({userId,enabled});
     },
     handleSelectChange(rows){
       let size = rows.length;
