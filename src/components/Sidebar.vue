@@ -63,8 +63,9 @@ export default {
     },
     methods: {
       getMenuList(){
-        HttpManager.menuList().then(res => {
+        HttpManager.authMenus().then(res => {
           this.menus = res.data.data;
+          console.log(this.menus)
         })
       }
     },

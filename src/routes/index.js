@@ -1,4 +1,5 @@
 import Login from "../views/Login";
+import Forbidden from "../views/403"
 import Home from "../components/Home";
 
 let routes = [
@@ -10,6 +11,11 @@ let routes = [
     path: '/login',
     name: 'Login',
     component: Login
+  },
+  {
+    path: '/forbidden',
+    name: 'Forbidden',
+    component: Forbidden
   },
   {
     path: '/home',

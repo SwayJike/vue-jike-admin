@@ -23,7 +23,7 @@
                 <div class="login-btn">
                     <el-button type="primary" @click="submitForm()">登录</el-button>
                 </div>
-                <p class="login-tips">Tips : 用户名user和密码123。</p>
+                <p class="login-tips">Tips : 用户名admin和密码123456。</p>
             </el-form>
         </div>
     </div>

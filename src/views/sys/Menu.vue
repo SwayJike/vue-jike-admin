@@ -4,19 +4,15 @@
     <div class="inline-list">
       <el-form :inline="true" :model="query" class="demo-form-inline">
         <el-form-item label="角色名:">
-          <el-input @keydown.enter.native.prevent="get$roleList" v-model="query.roleName" placeholder="请输入角色名"></el-input>
+          <el-input @keydown.enter.native.prevent="get$menusList" v-model="query.roleName" placeholder="请输入角色名"></el-input>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click.native="get$roleList">
+          <el-button type="primary" @click.native="get$menusList">
             <i style="margin-right: 6px" class="fa fa-search"></i>查询
           </el-button>
         </el-form-item>
-        <el-form-item>
-          <el-button :disabled="selectIds.length < 1" type="danger" @click="deleteRole(null)">
-            <i style="margin-right: 6px" class="fa fa-trash"></i>删除所选
-          </el-button>
-        </el-form-item>
       </el-form>
+
       <div>
         <el-upload
           style="display: inline-flex;margin-right: 10px"
@@ -49,11 +45,6 @@
       row-key="menuId"
       :tree-props="{children: 'children'}"
       :row-class-name="tableRowClassName">
-      <el-table-column
-        type="selection"
-        :selectable="handleSelectable"
-        width="55">
-      </el-table-column>
       <el-table-column
         prop="title"
         width="160"
@@ -132,6 +123,17 @@
         </template>
 
         <el-form :model="dialog.menu" :rules="dialog.rules" ref="form" label-width="100px" class="demo-ruleForm">
+
+          <el-form-item label="父级菜单" prop="pid">
+            <el-select v-model="dialog.menu.pid" placeholder="请选择父级菜单(可不选)">
+              <el-option
+                v-for="item in menuOptions"
+                :key="item.menuId"
+                :label="item.title"
+                :value="item.menuId">
+              </el-option>
+            </el-select>
+          </el-form-item>
           <el-form-item label="菜单标题" prop="title">
             <el-input v-model="dialog.menu.title" placeholder="请输入菜单标题"></el-input>
           </el-form-item>
@@ -142,7 +144,7 @@
             <el-input v-model="dialog.menu.component" placeholder="请输入组件"></el-input>
           </el-form-item>
           <el-form-item label="图标" prop="icon">
-            <el-input v-model="dialog.menu.icon" placeholder="请输入图标"></el-input>
+            <e-icon-picker size="mini" v-model="dialog.menu.icon" placeholder="请选择图标"/>
           </el-form-item>
           <el-form-item label="链接地址" prop="path">
             <el-input v-model="dialog.menu.path" placeholder="请输入链接地址"></el-input>
@@ -155,6 +157,7 @@
       </el-dialog>
     </div>
 
+<!--    <div>{{}}</div>-->
 
   </div>
 </template>
@@ -168,10 +171,10 @@ export default {
   data(){
     return {
       menus: [],
+      menuOptions: [],
       query:{
-        roleName: ''
+        title: ''
       },
-      selectIds: [],
       upload: {
         action: 'http://localhost:8080/sysRole/import',
         icon: 'fa fa-cloud-upload',
@@ -185,10 +188,21 @@ export default {
         title: '添加菜单',
         visible: false,
         menu: {
+          title: '',
           name: '',
-          level: 1,
-          description: '-',
-          dataScope: '本级'
+          component: '',
+          icon: '',
+          path: '',
+          iFrame: false,
+          cache: false,
+          hidden: false,
+        },
+        /*分页器*/
+        pager: {
+          pageNum: 1,
+          pageSize: 20,
+          total: 100,
+          sizes: [20, 40, 60, 80],
         },
         rules: {
           name: [
@@ -200,8 +214,9 @@ export default {
     }
   },
   methods: {
+    //TODO: 搜索功能待做
     get$menusList(){
-      HttpManager.menuList().then(res => {
+      HttpManager.menuList(this.pager, this.query).then(res => {
         this.menus = res.data.data;
       })
     },
@@ -246,12 +261,14 @@ export default {
       this.$refs[formName].validate((valid) => {
         if (valid) {
           HttpManager.saveOrUpdateMenu(this.dialog.menu).then(res => {
-            let menu = res.data.data;
+            this.get$menusList();
+            /*let menu = res.data.data;
             if (this.dialog.title.startsWith("修改")){
-              this.roles.splice(this.dialog.menu.index, 1, menu)
+              this.findAndUpdateChild(this.menus, menu)
+              //this.menus.splice(this.dialog.menu.index, 1, menu)
             }else {
-              this.roles.push(menu);
-            }
+              this.menus.push(menu);
+            }*/
           })
           this.dialog.visible = false;
         } else {
@@ -259,8 +276,17 @@ export default {
           return false;
         }
       });
-
-
+    },
+    findAndDelete(menus, menu){
+      menus.forEach((e, i) => {
+        if (e.children && e.children.length > 0){
+          this.findAndDelete(e.children, menu);
+        }else {
+          if (e.menuId == menu.menuId){
+            menus.splice(i, 1);
+          }
+        }
+      })
     },
     tableRowClassName({row, rowIndex}) {
       row.index = rowIndex;
@@ -277,23 +303,58 @@ export default {
     downloadRole(){
 
     },
+    initMenu(){
+      return {
+        title: '',
+        name: '',
+        component: '',
+        icon: '',
+        path: '',
+        iFrame: false,
+        cache: false,
+        hidden: false,
+      }
+    },
     addMenu(){
       this.dialog.title = '添加菜单';
       this.dialog.visible = true;
-      this.dialog.menu.create_by = localStorage.getItem('ms_username');
+      this.dialog.menu = this.initMenu();
+      this.dialog.menu.createBy = localStorage.getItem('ms_username');
     },
     updateMenu(row){
-      this.dialog.title = '更新菜单';
+      this.dialog.title = '修改菜单';
       this.dialog.visible = true;
       this.dialog.menu = Object.assign({}, row);
-      this.dialog.menu.update_by = localStorage.getItem('ms_username');
+      this.dialog.menu.children = [];
+      this.dialog.menu.cache = null;
+      this.dialog.menu.hidden = null;
+      this.dialog.menu.iFrame = null;
+      this.dialog.menu.updateBy = localStorage.getItem('ms_username');
     },
     deleteMenu(row){
-
+      /*row存在则是删除当前行,否则删除多行*/
+      this.$confirm('此操作将永久删除该用户, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+        center: true
+      }).then(() => {
+        HttpManager.removeMenu(row.menuId).then(() => {
+          this.get$menusList();
+        })
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消删除'
+        });
+      });
     }
   },
   created() {
     this.get$menusList();
+    HttpManager.menus().then(res => {
+      this.menuOptions = res.data.data;
+    })
   }
 }
 </script>

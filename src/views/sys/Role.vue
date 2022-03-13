@@ -45,6 +45,7 @@
       :data="roles"
       style="width: 100%;"
       max-height="500"
+      row-key="roleId"
       @selection-change="handleSelectChange"
       :row-class-name="tableRowClassName">
       <el-table-column
@@ -92,8 +93,9 @@
       <el-table-column
         fixed="right"
         label="操作"
-        width="160">
+        width="200">
         <template slot-scope="scope">
+          <el-button @click="menuMana(scope.row)" type="success">菜单列表</el-button>
           <el-button @click="updateUser(scope.row)" type="primary" icon="el-icon-edit" circle></el-button>
           <el-button :disabled="scope.row.roleId == 1" @click="deleteRole(scope.row)" type="danger" icon="el-icon-delete" circle></el-button>
         </template>
@@ -127,10 +129,36 @@
           <el-form-item label="数据权限" prop="dataScope">
             <el-input v-model="dialog.role.dataScope" placeholder="请输入数据权限"></el-input>
           </el-form-item>
+
         </el-form>
         <span slot="footer" class="dialog-footer">
           <el-button @click="dialog.visible = false">取 消</el-button>
           <el-button type="primary" @click="handleSubmit('form')">提 交</el-button>
+        </span>
+      </el-dialog>
+    </div>
+
+    <div>
+      <el-dialog
+        :visible.sync="menuDialog.visible"
+        width="30%"
+        center>
+        <template slot="title">
+          <span style="font-size: 26px;color: #08e7e0;letter-spacing: 2px">{{menuDialog.title}}</span>
+        </template>
+        <el-tree
+          :data="menuDialog.menus"
+          show-checkbox
+          node-key="menuId"
+          ref="tree"
+          @check="currentChecked"
+          :default-checked-keys="menuDialog.checkedMenuIds"
+          :props="{children: 'children',label: 'title'}">
+        </el-tree>
+
+        <span slot="footer" class="dialog-footer">
+          <el-button @click="dialog.visible = false">取 消</el-button>
+          <el-button type="primary" @click="menuSubmit">提 交</el-button>
         </span>
       </el-dialog>
     </div>
@@ -182,7 +210,13 @@ export default {
           ],
         }
       },
-
+      menuDialog: {
+        title: '菜单管理',
+        visible: false,
+        menus: [],
+        roleId: '',
+        checkedMenuIds: []
+      }
     }
   },
   methods: {
@@ -281,12 +315,30 @@ export default {
       this.dialog.role = Object.assign({}, row);
       this.dialog.role.updateBy = localStorage.getItem('ms_username');
     },
+    menuMana(row){
+      HttpManager.roleMenu(row.roleId).then(res => {
+        this.menuDialog.checkedMenuIds = res.data.data;
+        this.menuDialog.roleId = row.roleId;
+        this.menuDialog.visible = true;
+        this.resetChecked();
+      })
+    },
+    currentChecked (nodeObj, SelectedObj) {
+      this.menuDialog.checkedMenuIds = SelectedObj.checkedKeys;   // 这是选中的节点的key数组
+    },
+    resetChecked() {
+      this.$refs.tree.setCheckedKeys([]);
+    },
+    menuSubmit(){
+      HttpManager.updateRoleMenu(this.menuDialog.roleId, this.menuDialog.checkedMenuIds).then(res => {
+        this.menuDialog.visible = false;
+      })
+    },
     handleSubmit(formName){
       this.$refs[formName].validate((valid) => {
         if (valid) {
           HttpManager.saveOrUpdateRole(this.dialog.role).then(res => {
             let role = res.data.data;
-            console.log(role)
             if (this.dialog.title.startsWith("修改")){
               this.roles.splice(this.dialog.role.index, 1, role)
             }else {
@@ -305,6 +357,9 @@ export default {
   },
   created() {
     this.get$roleList();
+    HttpManager.menuList().then(res => {
+      this.menuDialog.menus = res.data.data;
+    })
   },
   filters: {
     ellipsis(value) {

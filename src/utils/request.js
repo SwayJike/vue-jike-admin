@@ -1,6 +1,6 @@
 import axios from "axios";
 import {Message} from "element-ui";
-
+import router from "../router";
 /*创建实例*/
 const instance = axios.create({
   baseURL: 'http://localhost:8080/',
@@ -23,8 +23,8 @@ instance.interceptors.response.use(response =>{
       Message.success(result.message);
     }
   } else {
-    if (result.message){
-      Message.error(result.message);
+    if(code == 403){
+      router.push('/forbidden');
     }
   }
 
